@@ -1,0 +1,11 @@
+[project]
+name = "baidu-map"
+version = "0.1.0"
+description = "Baidu Map MCP Server"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.28.1",
+    "mcp[cli]>=1.4.1",
+    "requests>=2.32.3",
+]
