@@ -1,14 +1,14 @@
-# baidu_geocoder.py
+# map.py
+import os
 import copy
 import httpx
  
-from typing import Optional
 from mcp.server.fastmcp import FastMCP, Context
  
 # 创建MCP服务器实例
 mcp = FastMCP("baidu-map")
 # 设置API密钥，用于调用百度地图API，获取方式请参考：https://lbsyun.baidu.com/apiconsole/key
-api_key = 'YOUR_API_KEY'
+api_key = os.getenv('BAIDU_MAPS_API_KEY')
 api_url = "http://api.map.baidu.com"
  
  
