@@ -204,7 +204,27 @@ interface WeatherResponse extends BaiduMapResponse {
       wd_night: string,
       date: string,
       week: string,
-    }>
+    }>,
+    indexes?: Array<{
+      name: string,
+      brief: string,
+      detail: string,
+    }>,
+    alerts: Array<{
+      type: string,
+      level: string,
+      title: string,
+      desc: string,
+    }>,
+    forecast_hours?: Array<{
+      text: string,
+      temp_fc: number,
+      wind_class: string,
+      rh: number,
+      prec_1h: number,
+      clouds: number,
+      data_time: number,
+    }> 
   }
 }
 
@@ -221,6 +241,55 @@ interface IPLocationResponse extends BaiduMapResponse {
       x: string,
       y: string,
     }
+  }
+}
+
+interface RoadTrafficResponse extends BaiduMapResponse {
+  description: string,
+  evaluation: {
+    status: number,
+    status_desc: string,
+  },
+  road_traffic: {
+    road_name: string,
+    congestion_sections?: Array<{
+      section_desc: string,
+      status: number,
+      speed: number,
+      congestion_distance: number,
+      congestion_trend: string,
+    }>
+  }
+}
+
+
+interface MarkSubmitResponse extends BaiduMapResponse {
+  result: {
+    session_id: string,
+    map_id: string,
+  }
+}
+
+interface MarkResultResponse extends BaiduMapResponse {
+  result: {
+    data: Array<{
+      answer_type: string,
+      create_time: string,
+      link: {
+        title: string,
+        desc: string,
+        jump_url: string,
+        image: string,
+        poi: Array<{
+          uid: string,
+          name: string,
+          location: any,
+          admin_info: any,
+          price: number,
+          shop_hours: string,
+        }>
+      }
+    }>
   }
 }
 
@@ -370,20 +439,23 @@ const DIRECTIONS_TOOL: Tool = {
 
 const WEATHER_TOOL: Tool = {
   name: "map_weather",
-  description: '通过行政区划代码获取实时天气信息和未来5天天气预报',
+  description: '通过行政区划代码或者经纬度坐标获取实时天气信息和未来5天天气预报',
   inputSchema: {
     type: "object",
     properties: {
       districtId: {
         type: "string",
         description: "行政区划代码（适用于区、县级别）"
+      },
+      location: {
+        type: "string",
+        description: "经纬度，经度在前纬度在后，逗号分隔，格式如116.404,39.915"
       }
     },
-    required: ["districtId"],
   }
 }
 
-const IP_LOCATION_TOOL: Tool ={
+const IP_LOCATION_TOOL: Tool = {
   name: "map_ip_location",
   description: "通过IP地址获取位置信息",
   inputSchema: {
@@ -398,6 +470,55 @@ const IP_LOCATION_TOOL: Tool ={
   }
 }
 
+const ROAD_TRAFFIC_TOOL: Tool = {
+  name: "map_road_traffic",
+  description: "根据城市和道路名称查询具体道路的实时拥堵评价和拥堵路段、拥堵距离、拥堵趋势等信息",
+  inputSchema: {
+    type: "object",
+    properties: {
+      roadName: {
+        type: "string",
+        description: "道路名称",
+      },
+      city: {
+        type: "string",
+        description: "城市名称"
+      },
+      bounds: {
+        type: "string",
+        description: "矩形区域，左下角和右上角的经纬度坐标点，坐标对间使用;号分隔，格式为：纬度,经度;纬度,经度，如39.912078,116.464303;39.918276,116.475442"
+      },
+      vertexes: {
+        type: "string",
+        description: "多边形边界点，经纬度顺序为：纬度,经度； 顶点顺序需按逆时针排列, 格式如vertexes=39.910528,116.472926;39.918276,116.475442;39.916671,116.459056;39.912078,116.464303"
+      },
+      center: {
+        type: "string",
+        description: "中心点坐标，如39.912078,116.464303"
+      },
+      radius: {
+        type: "number",
+        description: "查询半径，单位：米"
+      }
+    },
+  }
+}
+
+const MARK_SUBMIT_POI_TOOL: Tool = {
+  name: "map_poi_extract",
+  description: "POI智能标注",
+  inputSchema: {
+    type: "object",
+    properties: {
+      textContent: {
+        type: "string",
+        description: "描述POI的文本内容"
+      }
+    },
+    required: ["textContent"],
+  }
+}
+
 const MAPS_TOOLS = [
   GEOCODE_TOOL,
   REVERSE_GEOCODE_TOOL,
@@ -407,6 +528,8 @@ const MAPS_TOOLS = [
   DIRECTIONS_TOOL,
   WEATHER_TOOL,
   IP_LOCATION_TOOL,
+  ROAD_TRAFFIC_TOOL,
+  MARK_SUBMIT_POI_TOOL
 ] as const;
 
 // API handlers
@@ -675,14 +798,20 @@ async function handleDirections(
 }
 
 async function handleWeather(
-  districtId: string
+  districtId?: string,
+  location?: string,
 ) {
   const url = new URL("https://api.map.baidu.com/weather/v1/");
-  url.searchParams.append("district_id", districtId);
   url.searchParams.append("data_type", "all");
   url.searchParams.append("coordtype", "bd09ll");
   url.searchParams.append("ak", BAIDU_MAP_API_KEY);
   url.searchParams.append("from", "node_mcp");
+  if (location) {
+    url.searchParams.append("location", location);
+  }
+  if (districtId) {
+    url.searchParams.append("district_id", districtId);
+  }
 
   const response = await fetch(url.toString());
   const data = await response.json() as WeatherResponse;
@@ -690,7 +819,7 @@ async function handleWeather(
   if (data.status !== 0) {
     return {
       content: [{
-        type: 'text',
+        type: "text",
         text: `Weather searth failed: ${data.message || data.status}`
       }],
       isError: true
@@ -704,6 +833,9 @@ async function handleWeather(
         location: data.result.location,
         now: data.result.now,
         forecasts: data.result.forecasts,
+        forecast_hours: data.result.forecast_hours,
+        indexes: data.result.indexes,
+        alerts: data.result.alerts,
       }, null, 2)
     }],
     isError: false
@@ -725,13 +857,12 @@ async function handleIPLocation(
   if (data.status !== 0) {
     return {
       content: [{
-        type: 'text',
+        type: "text",
         text: `IP address searth failed: ${data.message || data.status}`
       }],
       isError: true
     }
   }
-
 
   return {
     content: [{
@@ -744,6 +875,148 @@ async function handleIPLocation(
     }],
     isError: false
   }
+}
+
+async function handleRoadTraffic(
+  roadName?: string,
+  city?: string,
+  bounds?: string,
+  vertexes?: string,
+  center?: string,
+  radius?: number,
+) {
+  const url = new URL("https://api.map.baidu.com");
+  if (roadName && city) {
+    url.pathname = "/traffic/v1/road";
+    url.searchParams.append("road_name", roadName);
+    url.searchParams.append("city", city);
+  }
+  if (bounds) {
+    url.pathname = "/traffic/v1/bound";
+    url.searchParams.append("bounds", bounds);
+  }
+  if (vertexes) {
+    url.pathname = "/traffic/v1/polygon";
+    url.searchParams.append("vertexes", vertexes);
+  }
+  if (center && radius) {
+    url.pathname = "/traffic/v1/around";
+    url.searchParams.append("center", center);
+    url.searchParams.append("radius", String(radius));
+  }
+  url.searchParams.append("ak", BAIDU_MAP_API_KEY);
+
+  const response = await fetch(url.toString());
+  const data = await response.json() as RoadTrafficResponse;
+
+  if (data.status !== 0) {
+    return {
+      content: [{
+        type: "text",
+        text: `road traffic search failed: ${data.message || data.status}`,
+      }],
+      isError: true
+    }
+  }
+
+  return {
+    content: [{
+      type: "text",
+      text: JSON.stringify({
+        description: data.description,
+        evaluation: data.evaluation,
+        road_traffic: data.road_traffic,
+      }, null, 2)
+    }],
+    isError: false
+  }
+}
+
+async function handlePoiExtract(
+  textContent: string
+) {
+  const submitUrl = "https://api.map.baidu.com/api_mark/v1/submit";
+  const params = new URLSearchParams();
+  params.append("text_content", textContent);
+  params.append("id", "75274677"); // 设备id
+  params.append("msg_type", "text");
+  params.append("ak", BAIDU_MAP_API_KEY);
+
+  const submitResponse = await fetch(submitUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: params.toString(),
+  });
+  const submitData = await submitResponse.json() as MarkSubmitResponse;
+
+  if (submitData.status !== 0) {
+    return {
+      content: [{
+        type: "text",
+        text: `mark submit failed: ${submitData.message || submitData.status}`
+      }],
+      isError: true
+    }
+  }
+
+  const url = "https://api.map.baidu.com/api_mark/v1/result";
+  const mapId = submitData.result.map_id;
+  params.delete("text_content");
+  params.delete("msg_type");
+  params.append("map_id", mapId);
+
+  // 每1s轮询查找数据，等待时间最长20s
+  const maxTime = 20 * 1000; // 20s
+  const intervalTime = 1000; // 1s
+  let elapsedTime = 0;
+  async function checkResult() {
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: params.toString(),
+    });
+    const data = await response.json() as MarkResultResponse;
+    const result = data.result;
+    if (result) {
+        return data;
+    }
+    return null;
+  }
+
+  let data = await checkResult();
+  while (!data && elapsedTime < maxTime) {
+    await new Promise(resolve => setTimeout(resolve, intervalTime));
+    elapsedTime += intervalTime;
+    data = await checkResult();
+  }
+
+  if (!data) {
+      return {
+        content: [{
+          type: "text",
+          text: `poi result is null`
+        }],
+        isError: true
+      }
+  }
+  return {
+    content: [{
+      type: "text",
+      text: JSON.stringify({
+        jumpUrl: data.result.data[0].link.jump_url,
+        title: data.result.data[0].link.title,
+        desc: data.result.data[0].link.desc,
+        image: data.result.data[0].link.image,
+        poi: data.result.data[0].link.poi,
+      }, null, 2)
+    }],
+    isError: false
+  }
+
 }
 
 // Server setup
@@ -816,16 +1089,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await handleDirections(origin, destination, mode);
       }
       case "map_weather": {
-        const {districtId} = request.params.arguments as {
+        const {districtId, location} = request.params.arguments as {
           districtId: string;
+          location: string,
         };
-        return await handleWeather(districtId);
+        return await handleWeather(districtId, location);
       }
       case "map_ip_location": {
         const {ip} = request.params.arguments as {
           ip: string;
         };
         return await handleIPLocation(ip);
+      }
+      case "map_road_traffic": {
+        const {roadName, city, bounds, vertexes, center, radius} = request.params.arguments as {
+          roadName?: string;
+          city?: string;
+          bounds?: string;
+          vertexes?: string;
+          center?: string;
+          radius?: number;
+        };
+        return await handleRoadTraffic(roadName, city, bounds, vertexes, center, radius);
+      }
+      case "map_poi_extract": {
+        const {textContent} = request.params.arguments as {
+          textContent: string;
+        };
+        return await handlePoiExtract(textContent);
       }
 
       default:
