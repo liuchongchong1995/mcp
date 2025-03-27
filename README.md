@@ -2,7 +2,7 @@
 
 ## 概述
 
-百度地图API现已全面兼容MCP协议，是国内首家兼容MCP协议的地图服务商。[MCP协议](https://modelcontextprotocol.io/)。
+百度地图API现已全面兼容[MCP协议](https://modelcontextprotocol.io/)，是国内首家兼容MCP协议的地图服务商。
 
 百度地图提供的MCP工具，包含10个API接口通过MCP协议进行对接，涵盖逆地理编码、地点检索、路线规划等。
 
