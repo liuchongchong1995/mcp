@@ -2,6 +2,7 @@
 import os
 import copy
 import httpx
+from asyncio import sleep
  
 from mcp.server.fastmcp import FastMCP, Context
  
@@ -9,7 +10,7 @@ from mcp.server.fastmcp import FastMCP, Context
 mcp = FastMCP("baidu-map")
 # 设置API密钥，用于调用百度地图API，获取方式请参考：https://lbsyun.baidu.com/apiconsole/key
 api_key = os.getenv('BAIDU_MAPS_API_KEY')
-api_url = "http://api.map.baidu.com"
+api_url = "https://api.map.baidu.com"
  
  
 def filter_result(data) -> dict:
@@ -42,61 +43,10 @@ def filter_result(data) -> dict:
                     route['steps'] = new_steps
     
     return processed_data
- 
- 
+
+
 @mcp.tool()
-async def reverse_geocode_v3(
-    latitude: float,
-    longitude: float,
-    ctx: Context
-) -> dict:
-    """
-    Name:
-        逆地理编码服务
-        
-    Description:
-        将坐标点转换为对应语义化地址
-        
-    Args:
-        latitude: 纬度 (WGS84坐标系)
-        longitude: 经度 (WGS84坐标系)
-        
-    """
-    try:
-        # 获取API密钥
-        if not api_key:
-            raise error_msg("There")
- 
-        # 调用百度API
-        url = f"{api_url}/reverse_geocoding/v3/"
-        params = {
-            "ak": api_key,
-            "output": "json",
-            "coordtype": "wgs84ll",
-            "location": f"{latitude},{longitude}",
-            "extensions_poi": "1",
-            "from": "py_mcp"
-        }
- 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, params=params)
-            response.raise_for_status()
-            result = response.json()
- 
-        if result.get("status") != 0:
-            error_msg = result.get("message", "unkown error")
-            raise Exception(f"API response error: {error_msg}")
- 
-        return result
- 
-    except httpx.HTTPError as e:
-        raise Exception(f"HTTP request failed: {str(e)}") from e
-    except KeyError as e:
-        raise Exception(f"Failed to parse reponse: {str(e)}") from e
- 
- 
-@mcp.tool()
-async def geocoding_v3(
+async def map_geocode(
     address: str,
     ctx: Context
 ) -> dict:
@@ -121,8 +71,11 @@ async def geocoding_v3(
  
         # 调用百度API
         url = f"{api_url}/geocoding/v3/"
+        
+        # 设置请求参数
+        # 更多参数信息请参考:https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-geocoding
         params = {
-            "ak": api_key,
+            "ak": f"{api_key}",
             "output": "json",
             "address": f"{address}",
             "from": "py_mcp"
@@ -143,10 +96,64 @@ async def geocoding_v3(
         raise Exception(f"HTTP request failed: {str(e)}") from e
     except KeyError as e:
         raise Exception(f"Failed to parse reponse: {str(e)}") from e
- 
+
  
 @mcp.tool()
-async def place_v2_search(
+async def map_reverse_geocode(
+    latitude: float,
+    longitude: float,
+    ctx: Context
+) -> dict:
+    """
+    Name:
+        逆地理编码服务
+        
+    Description:
+        将坐标点转换为对应语义化地址
+        
+    Args:
+        latitude: 纬度 (gcj02ll)
+        longitude: 经度 (gcj02ll)
+        
+    """
+    try:
+        # 获取API密钥
+        if not api_key:
+            raise error_msg("There")
+ 
+        # 调用百度API
+        url = f"{api_url}/reverse_geocoding/v3/"
+        
+        # 设置请求参数
+        # 更多参数信息请参考:https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-geocoding-abroad
+        params = {
+            "ak": f"{api_key}",
+            "output": "json",
+            "coordtype": "gcj02ll",
+            "location": f"{latitude},{longitude}",
+            "extensions_poi": "1",
+            "from": "py_mcp"
+        }
+ 
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, params=params)
+            response.raise_for_status()
+            result = response.json()
+ 
+        if result.get("status") != 0:
+            error_msg = result.get("message", "unkown error")
+            raise Exception(f"API response error: {error_msg}")
+ 
+        return result
+ 
+    except httpx.HTTPError as e:
+        raise Exception(f"HTTP request failed: {str(e)}") from e
+    except KeyError as e:
+        raise Exception(f"Failed to parse reponse: {str(e)}") from e
+ 
+
+@mcp.tool()
+async def map_search_places(
     query: str,
     region: str,
     location: str,
@@ -175,8 +182,11 @@ async def place_v2_search(
  
         # 调用百度API
         url = f"{api_url}/place/v2/search"
+        
+        # 设置请求参数
+        # 更多参数信息请参考:https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-placeapi
         params = {
-            "ak": api_key,
+            "ak": f"{api_key}",
             "output": "json",
             "query": f"{query}",
             "region": f"{region}",
@@ -203,7 +213,7 @@ async def place_v2_search(
         raise Exception(f"Failed to parse reponse: {str(e)}") from e
  
 @mcp.tool()
-async def place_v2_detail(
+async def map_place_details(
     uid: str,
     ctx: Context
 ) -> dict:
@@ -225,10 +235,14 @@ async def place_v2_detail(
  
         # 调用百度API
         url = f"{api_url}/place/v2/detail"
+        
+        # 设置请求参数
+        # 更多参数信息请参考:https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-placeapi/detail
         params = {
-            "ak": api_key,
+            "ak": f"{api_key}",
             "output": "json",
             "uid": f"{uid}",
+            # Agent入参不可控，这里给定scope为2
             "scope": 2,
             "from": "py_mcp"
         }
@@ -250,7 +264,7 @@ async def place_v2_detail(
         raise Exception(f"Failed to parse reponse: {str(e)}") from e
  
 @mcp.tool()
-async def routematrix_v2_driving(
+async def map_distance_matrix(
     origins: str,
     destinations: str,
     mode: str,
@@ -278,9 +292,12 @@ async def routematrix_v2_driving(
             raise error_msg("Can not found API key.")
  
         # 调用百度API
-        url = f"{api_url}/routematrix/v2/" + mode
+        url = f"{api_url}/routematrix/v2/{mode}"
+        
+        # 设置请求参数
+        # 更多参数信息请参考:https://lbsyun.baidu.com/faq/api?title=webapi/routchtout
         params = {
-            "ak": api_key,
+            "ak": f"{api_key}",
             "output": "json",
             "origins": f"{origins}",
             "destinations": f"{destinations}",
@@ -304,7 +321,7 @@ async def routematrix_v2_driving(
         raise Exception(f"Failed to parse reponse: {str(e)}") from e
  
 @mcp.tool()
-async def directionlite_v1(
+async def map_directions(
     model: str,
     origin: str,
     destination: str,
@@ -333,8 +350,11 @@ async def directionlite_v1(
  
         # 调用百度API
         url = f"{api_url}/directionlite/v1/{model}"
+        
+        # 设置请求参数
+        # 更多参数信息请参考:https://lbs.baidu.com/faq/api?title=webapi/direction-api-v2
         params = {
-            "ak": api_key,
+            "ak": f"{api_key}",
             "output": "json",
             "origin": f"{origin}",
             "destination": f"{destination}",
@@ -368,8 +388,8 @@ async def directionlite_v1(
  
  
 @mcp.tool()
-async def weather_v1(
-    #location: str,
+async def map_weather(
+    location: str,
     district_id: int,
     ctx: Context
 ) -> dict:
@@ -378,11 +398,11 @@ async def weather_v1(
         天气查询服务
         
     Description:
-        用户可通过坐标查询实时天气信息及未来5天天气预报。
+        用户可通过行政区划或是经纬度坐标查询实时天气信息及未来5天天气预报(注意: 使用经纬度坐标需要高级权限)。
         
     Args:
- 
-        district_id: 行政区划
+        location: 经纬度，经度在前纬度在后，逗号分隔 (需要高级权限, 例如: 116.30815,40.056878)
+        district_id: 行政区划 (例如: 1101010)
     """
     try:
         # 获取API密钥
@@ -391,13 +411,20 @@ async def weather_v1(
  
         # 调用百度API
         url = f"{api_url}/weather/v1/?"
+        
+        # 设置请求参数
+        # 更多参数信息请参考:https://lbs.baidu.com/faq/api?title=webapi/weather
         params = {
-            "ak": api_key,
-            #"location": f"{location}",
-            "district_id": f"{district_id}",
-            "data_type": "now",
+            "ak": f"{api_key}",
+            "data_type": "all",
             "from": "py_mcp"
         }
+        
+        # 核心入参，二选一
+        if not location:
+            params["district_id"] = f"{district_id}"
+        else :
+            params["location"] = f"{location}"
  
         async with httpx.AsyncClient() as client:
             response = await client.get(url, params=params)
@@ -417,7 +444,8 @@ async def weather_v1(
  
  
 @mcp.tool()
-async def location_ip(
+async def map_ip_location(
+    # ip: str,
     ctx: Context
 ) -> dict:
     """
@@ -428,17 +456,19 @@ async def location_ip(
         根据用户请求的IP获取当前的位置，当需要知道用户当前位置、所在城市时可以调用该工具获取
         
     Args:
-        
     """
     try:
         # 获取API密钥
         if not api_key:
-            raise error_msg("The r")
+            raise error_msg("Can not found API key.")
  
         # 调用百度API
         url = f"{api_url}/location/ip"
+        
+        # 设置请求参数
+        # 更多参数信息请参考:https://lbs.baidu.com/faq/api?title=webapi/ip-api
         params = {
-            "ak": api_key,
+            "ak": f"{api_key}",
             "from": "py_mcp"
         }
  
@@ -453,6 +483,171 @@ async def location_ip(
  
         return result
  
+    except httpx.HTTPError as e:
+        raise Exception(f"HTTP request failed: {str(e)}") from e
+    except KeyError as e:
+        raise Exception(f"Failed to parse reponse: {str(e)}") from e
+    
+
+@mcp.tool()
+async def map_road_traffic(
+    model: str,
+    road_name: str,
+    city: str,
+    bounds: str,
+    vertexes: str,
+    center: str,
+    radius: int,
+    ctx: Context
+) -> dict:
+    """
+    Name:
+        实时路况查询服务
+        
+    Description:
+        查询实时交通拥堵情况, 可通过指定道路名和区域形状(矩形, 多边形, 圆形)进行实时路况查询。
+        
+        道路实时路况查询: 查询具体道路的实时拥堵评价和拥堵路段、拥堵距离、拥堵趋势等信息
+        矩形区域实时路况查询: 查询指定矩形地理范围的实时拥堵情况和各拥堵路段信息
+        多边形区域实时路况查询: 查询指定多边形地理范围的实时拥堵情况和各拥堵路段信息
+        圆形区域(周边)实时路况查询: 查询某中心点周边半径范围内的实时拥堵情况和各拥堵路段信息
+
+        
+    Args:
+        model:      路况查询类型(road, bound, polygon, around)
+        road_name:  道路名称和道路方向, model=road时必传 (如:朝阳路南向北)
+        city:       城市名称或城市adcode, model=road时必传 (如:北京市)
+        bounds:     区域左下角和右上角的经纬度坐标, model=bound时必传 (如:39.912078,116.464303;39.918276,116.475442)
+        vertexes:   多边形区域的顶点经纬度, model=polygon时必传 (如:39.910528,116.472926;39.918276,116.475442;39.916671,116.459056;39.912078,116.464303)
+        center:     圆形区域的中心点经纬度坐标, model=around时必传 (如:39.912078,116.464303)
+        radius:     圆形区域的半径(米), 取值[1,1000], model=around时必传 (如:200)
+ 
+    """
+    try:
+        # 获取API密钥
+        if not api_key:
+            raise error_msg("Can not found API key.")
+ 
+        # 调用百度API
+        url = f"{api_url}/traffic/v1/{model}?"
+        
+        # 设置请求参数
+        # 更多参数信息请参考:https://lbs.baidu.com/faq/api?title=webapi/traffic
+        params = {
+            "ak": f"{api_key}",
+            "output": "json",
+            "from": "py_mcp"
+        }
+        
+        # 核心入参，根据model选择
+        match model:
+            case 'bound': 
+                params['bounds'] = f'{bounds}'
+            case 'polygon': 
+                params['vertexes'] = f'{vertexes}'
+            case 'around': 
+                params['center'] = f'{center}'
+                params['radius'] = f'{radius}'
+            case 'road':
+                params['road_name'] = f'{road_name}'
+                params['city'] = f'{city}'
+            case _:             
+                pass
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, params=params)
+            response.raise_for_status()
+            result = response.json()
+ 
+        if result.get("status") != 0:
+            error_msg = result.get("message", "unkown error")
+            raise Exception(f"API response error: {error_msg}")
+ 
+        return result
+ 
+    except httpx.HTTPError as e:
+        raise Exception(f"HTTP request failed: {str(e)}") from e
+    except KeyError as e:
+        raise Exception(f"Failed to parse reponse: {str(e)}") from e
+    
+    
+@mcp.tool()
+async def map_poi_extract(
+    text_content: str,
+    ctx: Context
+) -> dict:
+    """
+    Name:
+        POI智能提取
+        
+    Description:
+        根据用户提供的文本描述信息, 智能提取出文本中所提及的POI相关信息. (注意: 使用该服务, api_key需要拥有对应的高级权限, 否则会报错)
+        
+    Args:
+        text_content: 用于提取POI的文本描述信息 (完整的旅游路线，行程规划，景点推荐描述等文本内容, 例如: 新疆独库公路和塔里木湖太美了, 从独山子大峡谷到天山神秘大峡谷也是很不错的体验)
+    """
+    
+    # 关于高级权限使用的相关问题，请联系我们: https://lbsyun.baidu.com/apiconsole/fankui?typeOne=%E4%BA%A7%E5%93%81%E9%9C%80%E6%B1%82&typeTwo=%E9%AB%98%E7%BA%A7%E6%9C%8D%E5%8A%A1
+    
+    try:
+        # 获取API密钥
+        if not api_key:
+            raise error_msg("Can not found API key.")
+ 
+        # 调用POI智能提取的提交接口
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        submit_url = f"{api_url}/api_mark/v1/submit"
+        result_url = f"{api_url}/api_mark/v1/result"
+        
+        # 设置上传用户描述的请求体
+        submit_body = {
+            "ak": f"{api_key}",
+            "id": 0,
+            "msg_type": "text",
+            "text_content": f"{text_content}",
+            "from": "py_mcp"
+        }
+
+        # 异步请求
+        async with httpx.AsyncClient() as client:
+            # 提交任务
+            submit_resp = await client.post(
+                submit_url, data=submit_body, headers=headers, timeout=10.0
+            )
+            submit_resp.raise_for_status()
+            submit_result = submit_resp.json()
+
+            if submit_result.get("status") != 0:
+                error_msg = submit_result.get("message", "unkown error")
+                raise Exception(f"API response error: {error_msg}")
+            
+
+            map_id = submit_result.get("result", {}).get("map_id")
+            if not map_id:
+                raise Exception("Can not found map_id")
+
+            # 轮询获取结果（最多5次，间隔2秒）
+            result_body = {"ak": api_key, "id": 0, "map_id": map_id, "from": "py_mcp"}
+            max_retries = 5
+            for attempt in range(max_retries):
+                result_resp = await client.post(
+                    result_url, data=result_body, headers=headers, timeout=10.0
+                )
+                result_resp.raise_for_status()
+                result = result_resp.json()
+
+                if result.get("status") == 0 and result.get("result"):
+                    return result
+                elif attempt < max_retries - 1:
+                    await sleep(2)
+            
+            else:
+                raise Exception("Timeout to get the result")
+                
+        if result.get("status") != 0:
+            error_msg = result.get("message", "unkown error")
+            raise Exception(f"API response error: {error_msg}")
+
     except httpx.HTTPError as e:
         raise Exception(f"HTTP request failed: {str(e)}") from e
     except KeyError as e:
