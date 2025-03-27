@@ -2,6 +2,7 @@
 import os
 import copy
 import httpx
+from asyncio import sleep
  
 from mcp.server.fastmcp import FastMCP, Context
  
@@ -400,7 +401,7 @@ async def map_weather(
         用户可通过行政区划或是经纬度坐标查询实时天气信息及未来5天天气预报(注意: 使用经纬度坐标需要高级权限)。
         
     Args:
-        location: 经纬度坐标 (需要高级权限, 例如: 40.056878,116.30815)
+        location: 经纬度，经度在前纬度在后，逗号分隔 (需要高级权限, 例如: 116.30815,40.056878)
         district_id: 行政区划 (例如: 1101010)
     """
     try:
@@ -594,7 +595,9 @@ async def map_poi_extract(
             raise error_msg("Can not found API key.")
  
         # 调用POI智能提取的提交接口
-        url = f"{api_url}/api_mark/v1/submit"
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        submit_url = f"{api_url}/api_mark/v1/submit"
+        result_url = f"{api_url}/api_mark/v1/result"
         
         # 设置上传用户描述的请求体
         submit_body = {
@@ -604,41 +607,47 @@ async def map_poi_extract(
             "text_content": f"{text_content}",
             "from": "py_mcp"
         }
- 
+
+        # 异步请求
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, body=submit_body)
-            response.raise_for_status()
-            submit_result = response.json()
- 
-        if submit_result.get("status") != 0:
-            error_msg = submit_result.get("message", "unkown error")
-            raise Exception(f"API response error: {error_msg}")
-        
-        if submit_result["map_id"] is None:
-            raise Exception("Failed to get map_id")
-        
-        # 调用POI智能提取的结果查询接口
-        url = f"{api_url}/api_mark/v1/result"
-        
-        # 设置获取POI智能提取结果的请求体
-        result_body = {
-            "ak": f"{api_key}",
-            "id": 0,
-            "map_id": submit_result["map_id"],
-            "from": "py_mcp"
-        }
-        
-        async with httpx.AsyncClient() as client:
-            response = await client.post(url, params=result_body)
-            response.raise_for_status()
-            result = response.json()
+            # 提交任务
+            submit_resp = await client.post(
+                submit_url, data=submit_body, headers=headers, timeout=10.0
+            )
+            submit_resp.raise_for_status()
+            submit_result = submit_resp.json()
+
+            if submit_result.get("status") != 0:
+                error_msg = submit_result.get("message", "unkown error")
+                raise Exception(f"API response error: {error_msg}")
             
+
+            map_id = submit_result.get("result", {}).get("map_id")
+            if not map_id:
+                raise Exception("Can not found map_id")
+
+            # 轮询获取结果（最多5次，间隔2秒）
+            result_body = {"ak": api_key, "id": 0, "map_id": map_id, "from": "py_mcp"}
+            max_retries = 5
+            for attempt in range(max_retries):
+                result_resp = await client.post(
+                    result_url, data=result_body, headers=headers, timeout=10.0
+                )
+                result_resp.raise_for_status()
+                result = result_resp.json()
+
+                if result.get("status") == 0 and result.get("result"):
+                    return result
+                elif attempt < max_retries - 1:
+                    await sleep(2)
+            
+            else:
+                raise Exception("Timeout to get the result")
+                
         if result.get("status") != 0:
             error_msg = result.get("message", "unkown error")
-            raise Exception(f"API response error: {error_msg}") 
- 
-        return result
- 
+            raise Exception(f"API response error: {error_msg}")
+
     except httpx.HTTPError as e:
         raise Exception(f"HTTP request failed: {str(e)}") from e
     except KeyError as e:
