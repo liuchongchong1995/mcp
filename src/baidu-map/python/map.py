@@ -599,6 +599,7 @@ async def map_poi_extract(
         # 设置上传用户描述的请求体
         submit_body = {
             "ak": f"{api_key}",
+            "id": 0,
             "msg_type": "text",
             "text_content": f"{text_content}",
             "from": "py_mcp"
@@ -622,6 +623,7 @@ async def map_poi_extract(
         # 设置获取POI智能提取结果的请求体
         result_body = {
             "ak": f"{api_key}",
+            "id": 0,
             "map_id": submit_result["map_id"],
             "from": "py_mcp"
         }
