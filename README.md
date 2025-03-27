@@ -263,9 +263,9 @@ if __name__ == "__main__":
 
 ![](./img/agent_result.png)
 
-## 注意
+## 说明
 
-百度地图MCP Server中:
+在百度地图MCP Server中:
 
 传入的行政区划编码均采用[百度adcode映射表](https://lbsyun.baidu.com/faq/api?title=webapi/download)。
 
@@ -275,9 +275,12 @@ if __name__ == "__main__":
 
 [MIT](./LICENSE) © baidu-maps
 
-## 联系
+## 授权
 
 百度地图MCP Server中的部分高级能力需要申请**高级权限**才可使用。如有需要的话，请[联系](https://lbsyun.baidu.com/apiconsole/fankui?typeOne=%E4%BA%A7%E5%93%81%E9%9C%80%E6%B1%82&typeTwo=%E9%AB%98%E7%BA%A7%E6%9C%8D%E5%8A%A1)我们。
+
+
+## 反馈
 
 在使用百度地图MCP Server时遇到的任何问题，欢迎通过`issue`或是[百度地图开放平台](https://lbsyun.baidu.com/apiconsole/fankui?typeOne=30046&typeTwo=53524&typeThree=1032776)反馈给我们，我们也欢迎每一个积极的`PR`，非常感谢各位的支持与贡献❤️
 
