@@ -1,14 +1,12 @@
 # 百度地图 MCP Server
 
-## 简介
+## 概述
 
 百度地图核心API现已全面兼容MCP协议，是国内首家兼容MCP协议的地图服务商。关于MCP协议，详见MCP官方[文档](https://modelcontextprotocol.io/)。
 
 目前提供的MCP工具列表包含10个核心API接口和MCP协议的对接，涵盖逆地理编码、地点检索、路线规划等。
 
 依赖`MCP Python SDK`和`MCP Typescript SDK`开发，任意支持MCP协议的智能体助手（如`Claude`、`Cursor`以及`千帆AppBuilder`等）都可以快速接入。
-
-在使用百度地图MCP Server时遇到的任何问题，欢迎通过`issue`或是[百度地图开放平台](https://lbsyun.baidu.com/apiconsole/fankui?typeOne=30046&typeTwo=53524&typeThree=1032776)反馈给我们，我们也欢迎每一个积极的`PR`，非常感谢各位的支持与贡献❤️
 
 ## 工具
 
@@ -265,13 +263,23 @@ if __name__ == "__main__":
 
 ![](./img/agent_result.png)
 
-## QA
+## 注意事项
 
-百度地图MCP Server中传入的行政区划编码均采用[百度adcode映射表](https://lbsyun.baidu.com/faq/api?title=webapi/download)。
+百度地图MCP Server中:
 
-百度地图MCP Server中传入的经纬度坐标均采用国测局经纬度坐标`gcj02ll`，详见[百度坐标系](https://lbsyun.baidu.com/index.php?title=coordinate)。
+传入的行政区划编码均采用[百度adcode映射表](https://lbsyun.baidu.com/faq/api?title=webapi/download)。
+
+传入的经纬度坐标均采用国测局经纬度坐标`gcj02ll`，详见[百度坐标系](https://lbsyun.baidu.com/index.php?title=coordinate)。
+
+## License
+
+[MIT](./LICENSE) © baidu-maps
+
+## 联系我们
 
 百度地图MCP Server中的部分高级能力需要申请**高级权限**才可使用。如有需要的话，请[联系](https://lbsyun.baidu.com/apiconsole/fankui?typeOne=%E4%BA%A7%E5%93%81%E9%9C%80%E6%B1%82&typeTwo=%E9%AB%98%E7%BA%A7%E6%9C%8D%E5%8A%A1)我们。
+
+在使用百度地图MCP Server时遇到的任何问题，欢迎通过`issue`或是[百度地图开放平台](https://lbsyun.baidu.com/apiconsole/fankui?typeOne=30046&typeTwo=53524&typeThree=1032776)反馈给我们，我们也欢迎每一个积极的`PR`，非常感谢各位的支持与贡献❤️
 
 ## Features
 
