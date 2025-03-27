@@ -155,7 +155,7 @@ node -v
 模板代码可向下跳转，通过SDK Agent &&地图MCP Server，拿到导航路线及路线信息，并给出出行建议。
 
 
-##### Agent配置
+#### Agent配置
 
 前往[千帆平台](https://console.bce.baidu.com/ai_apaas/personalSpace/app)，新建一个应用，并发布。
 
@@ -163,7 +163,7 @@ node -v
 
 将Agent的思考轮数调到6。发布应用。
 
-##### 调用
+#### 调用
 
 此代码可以当作模板，以SDK的形式调用千帆平台上已经构建好且已发布的App，再将MCP Server下载至本地，将文件相对路径写入代码即可。
 
@@ -249,17 +249,17 @@ if __name__ == "__main__":
     loop.run_until_complete(main())
 ```
 
-##### 效果
+#### 效果
 
 经过Agent自己的思考，通过调用MCPServer 地点检索、地理编码服务、路线规划服务等多个tool，拿到导航路线及路线信息，并给出出行建议。
 
 实际用户请求：***“请为我计划一次北京赏花一日游。尽量给出更舒适的出行安排，当然，也要注意天气状况。”***
 
-##### 思考过程
+#### 思考过程
 
 ![](./img/thinking_progress.png)
 
-##### Agent结果
+#### Agent结果
 
 ![](./img/agent_result.png)
 
