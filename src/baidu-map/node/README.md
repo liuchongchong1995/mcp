@@ -8,9 +8,9 @@ MCP Server for the Baidu Map API.
    - 地理编码服务
    - Input: 
      - `address` (string): 待解析的地址。最多支持84个字节。
-          可以输入两种样式的值，分别是
-          1、标准的结构化地址信息，如北京市海淀区上地十街十号【推荐，地址结构越完整，解析精度越高】
-          2、支持“*路与*路交叉口”描述方式，如北一环路和阜阳路的交叉路口
+       可以输入两种样式的值，分别是
+       1. 标准的结构化地址信息，如北京市海淀区上地十街十号【推荐，地址结构越完整，解析精度越高】
+       2. 支持“*路与*路交叉口”描述方式，如北一环路和阜阳路的交叉路口
           第二种方式并不总是有返回结果，只有当地址库中存在该地址描述时才有返回。
    - Returns: 
      - `location`: { lat: number, lng: number } 
@@ -25,7 +25,7 @@ MCP Server for the Baidu Map API.
      - `latitude` (number)
      - `longitude` (number)
    - Returns:
-     - `place_id`: string;
+     - `place_id`: string
      - `location`: { lng: number, lat: number }
      - `formatted_address`: string
      - `formatted_address_poi`: string
@@ -125,6 +125,7 @@ MCP Server for the Baidu Map API.
      - `destination` (string)
      - `mode` (optional): "driving" | "walking" | "riding" | "transit"
    - Returns: route details with steps, distance, duration
+
 7. `map_weather`
    - 通过行政区划代码查询实时天气信息及未来5天天气预报
    - Input: `districtId` (string)
@@ -135,6 +136,22 @@ MCP Server for the Baidu Map API.
    - Input: `ip` (string)
    - Returns: formatted_address, address_detail, point
 
+9. `map_road_traffic`
+   - 根据城市和道路名称查询具体道路的实时路况信息
+   - Inputs:
+     - `roadName` (string)
+     - `city` (string)
+   - Returns: description, evaluation and road traffic
+
+10. `map_poi_extract`
+    - 提取文本内容中的POI信息
+    - Inputs: `textContent` (string) POI文本描述内容
+    - Returns:
+      - `jumpUrl` string
+      - `title` string
+      - `desc` string
+      - `image` string
+      - `poi` Array of POI information
 ## Setup
 
 ### API Key
