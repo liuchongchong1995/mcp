@@ -7,7 +7,7 @@ from asyncio import sleep
 from mcp.server.fastmcp import FastMCP, Context
  
 # 创建MCP服务器实例
-mcp = FastMCP("baidu-map")
+mcp = FastMCP("mcp-server-baidu-maps")
 # 设置API密钥，用于调用百度地图API，获取方式请参考：https://lbsyun.baidu.com/apiconsole/key
 api_key = os.getenv('BAIDU_MAPS_API_KEY')
 api_url = "https://api.map.baidu.com"
@@ -67,7 +67,7 @@ async def map_geocode(
     try:
         # 获取API密钥
         if not api_key:
-            raise error_msg("Can not found API key.")
+            raise Exception("Can not found API key.")
  
         # 调用百度API
         url = f"{api_url}/geocoding/v3/"
@@ -109,7 +109,7 @@ async def map_reverse_geocode(
         逆地理编码服务
         
     Description:
-        将坐标点转换为对应语义化地址
+        根据经纬度坐标点获取对应位置的行政区划与POI信息
         
     Args:
         latitude: 纬度 (gcj02ll)
@@ -119,7 +119,7 @@ async def map_reverse_geocode(
     try:
         # 获取API密钥
         if not api_key:
-            raise error_msg("There")
+            raise Exception("There")
  
         # 调用百度API
         url = f"{api_url}/reverse_geocoding/v3/"
@@ -178,7 +178,7 @@ async def map_search_places(
     try:
         # 获取API密钥
         if not api_key:
-            raise error_msg("Can not found API key.")
+            raise Exception("Can not found API key.")
  
         # 调用百度API
         url = f"{api_url}/place/v2/search"
@@ -231,7 +231,7 @@ async def map_place_details(
     try:
         # 获取API密钥
         if not api_key:
-            raise error_msg("Can not found API key.")
+            raise Exception("Can not found API key.")
  
         # 调用百度API
         url = f"{api_url}/place/v2/detail"
@@ -289,7 +289,7 @@ async def map_distance_matrix(
     try:
         # 获取API密钥
         if not api_key:
-            raise error_msg("Can not found API key.")
+            raise Exception("Can not found API key.")
  
         # 调用百度API
         url = f"{api_url}/routematrix/v2/{mode}"
@@ -346,7 +346,7 @@ async def map_directions(
     try:
         # 获取API密钥
         if not api_key:
-            raise error_msg("Can not found API key.")
+            raise Exception("Can not found API key.")
  
         # 调用百度API
         url = f"{api_url}/directionlite/v1/{model}"
@@ -407,7 +407,7 @@ async def map_weather(
     try:
         # 获取API密钥
         if not api_key:
-            raise error_msg("Can not found API key.")
+            raise Exception("Can not found API key.")
  
         # 调用百度API
         url = f"{api_url}/weather/v1/?"
@@ -460,7 +460,7 @@ async def map_ip_location(
     try:
         # 获取API密钥
         if not api_key:
-            raise error_msg("Can not found API key.")
+            raise Exception("Can not found API key.")
  
         # 调用百度API
         url = f"{api_url}/location/ip"
@@ -526,7 +526,7 @@ async def map_road_traffic(
     try:
         # 获取API密钥
         if not api_key:
-            raise error_msg("Can not found API key.")
+            raise Exception("Can not found API key.")
  
         # 调用百度API
         url = f"{api_url}/traffic/v1/{model}?"
@@ -592,7 +592,7 @@ async def map_poi_extract(
     try:
         # 获取API密钥
         if not api_key:
-            raise error_msg("Can not found API key.")
+            raise Exception("Can not found API key.")
  
         # 调用POI智能提取的提交接口
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -652,7 +652,6 @@ async def map_poi_extract(
         raise Exception(f"HTTP request failed: {str(e)}") from e
     except KeyError as e:
         raise Exception(f"Failed to parse reponse: {str(e)}") from e
- 
  
 if __name__ == "__main__":
     mcp.run()
