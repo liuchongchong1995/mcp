@@ -89,9 +89,66 @@
 在选择两种方法之前，你需要在[百度地图开放平台](https://lbsyun.baidu.com/apiconsole/key)的控制台中创建一个服务端AK，通过AK你才能够调用百度地图API能力。
 
 
-### Python
+### Python接入
 
-详见[Python接入文档](./src/baidu-map/python/README.md)
+如果你希望自定义百度地图MCP Server的能力，可以通过[源码](./src/baidu-map/python/src/mcp_server_baidu_maps/map.py)接入，方式详见[Python接入文档](./src/baidu-map/python/README.md)。
+
+在v1.1版本更新中，我们通过pypi发布了百度地图MCP Server：*mcp-server-baidu-maps*，你可以使用任意Python包管理工具轻松获取并快速配置使用。
+
+#### 安装
+
+##### 使用uv（推荐）
+使用[`uv`](https://docs.astral.sh/uv/)时不需要特殊安装，我们将使用[`uvx`](https://docs.astral.sh/uv/guides/tools/)直接运行*mcp-server-baidu-maps*
+
+##### 使用pip
+或者你可以通过pip来安装*mcp-server-baidu-maps*
+```bash
+pip install mcp-server-baidu-maps
+```
+
+安装后，我们可以使用以下命令将其作为脚本运行：
+```bash
+python -m mcp_server_baidu_maps
+```
+
+#### 配置
+在任意MCP客户端（如Claude.app）中添加如下配置，部分客户端下可能需要做一些格式化调整。
+
+其中*BAIDU_MAPS_API_KEY*对应的值需要替换为你自己的AK。
+
+<details>
+<summary>Using uvx</summary>
+
+```json
+"mcpServers": {
+  "baidu-maps": {
+    "command": "uvx",
+    "args": ["mcp-server-baidu-maps"],
+    "env": {
+        "BAIDU_MAPS_API_KEY": "<YOUR_API_KEY>"
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary>Using pip installation</summary>
+
+```json
+"mcpServers": {
+  "baidu-maps": {
+    "command": "python",
+    "args": ["-m", "mcp_server_baidu_maps"],
+    "env": {
+        "BAIDU_MAPS_API_KEY": "<YOUR_API_KEY>"
+    }
+  }
+}
+```
+</details>
+
+保存配置后，重启你的MCP客户端，即可使用百度地图MCP Server。
 
 ### Typescript接入
 
@@ -288,5 +345,5 @@ if __name__ == "__main__":
 
 | 版本 | 功能说明                       | 更新日期      |
 | ---- | ------------------------------ | ------------- |
-| V1.0 | 百度地图MCP Server正式上线     | 2025年3月21日 |
-| V1.1 | 补充`uvx`、`pip`形式的快速接入 | ---           |
+| V1.0 | 百度地图MCP Server正式上线     | 2025-03-21 |
+| V1.1 | 补充`uvx`、`pip`形式的快速接入 | 2025-03-28 |
