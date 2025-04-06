@@ -233,7 +233,7 @@ import appbuilder
 from appbuilder.core.console.appbuilder_client.async_event_handler import (
     AsyncAppBuilderEventHandler,
 )
-from appbuilder.modelcontextprotocol.client import MCPClient
+from appbuilder.mcp_server.client import MCPClient
 class MyEventHandler(AsyncAppBuilderEventHandler):
     def __init__(self, mcp_client):
         super().__init__()
