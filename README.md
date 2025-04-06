@@ -120,12 +120,14 @@ python -m mcp_server_baidu_maps
 <summary>Using uvx</summary>
 
 ```json
-"mcpServers": {
-  "baidu-maps": {
-    "command": "uvx",
-    "args": ["mcp-server-baidu-maps"],
-    "env": {
+{
+  "mcpServers": {
+    "baidu-maps": {
+      "command": "uvx",
+      "args": ["mcp-server-baidu-maps"],
+      "env": {
         "BAIDU_MAPS_API_KEY": "<YOUR_API_KEY>"
+      }
     }
   }
 }
@@ -136,12 +138,14 @@ python -m mcp_server_baidu_maps
 <summary>Using pip installation</summary>
 
 ```json
-"mcpServers": {
-  "baidu-maps": {
-    "command": "python",
-    "args": ["-m", "mcp_server_baidu_maps"],
-    "env": {
-        "BAIDU_MAPS_API_KEY": "<YOUR_API_KEY>"
+{
+  "mcpServers": {
+    "baidu-maps": {
+      "command": "python",
+      "args": ["-m", "mcp_server_baidu_maps"],
+      "env": {
+          "BAIDU_MAPS_API_KEY": "<YOUR_API_KEY>"
+      }
     }
   }
 }
