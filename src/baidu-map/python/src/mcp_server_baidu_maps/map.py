@@ -9,6 +9,7 @@ from mcp.server.fastmcp import FastMCP, Context
 # 创建MCP服务器实例
 mcp = FastMCP("mcp-server-baidu-maps")
 # 设置API密钥，用于调用百度地图API，获取方式请参考：https://lbsyun.baidu.com/apiconsole/key
+os.environ["BAIDU_MAPS_API_KEY"] = "<BAIDU_MAPS_API_KEY>"
 api_key = os.getenv('BAIDU_MAPS_API_KEY')
 api_url = "https://api.map.baidu.com"
  
