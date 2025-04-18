@@ -8,7 +8,14 @@ from mcp.server.fastmcp import FastMCP, Context
  
 # 创建MCP服务器实例
 mcp = FastMCP("mcp-server-baidu-maps")
-# 获取环境变量中的API密钥，用于调用百度地图API，获取方式请参考：https://lbsyun.baidu.com/apiconsole/key; api_key通过uv 的env变量进行设置。
+'''
+
+获取环境变量中的API密钥, 用于调用百度地图API
+环境变量名为: BAIDU_MAPS_API_KEY, 在客户端侧通过配置文件进行设置传入
+获取方式请参考: https://lbsyun.baidu.com/apiconsole/key; 
+
+'''
+
 api_key = os.getenv('BAIDU_MAPS_API_KEY')
 api_url = "https://api.map.baidu.com"
  
@@ -109,7 +116,7 @@ async def map_reverse_geocode(
         逆地理编码服务
         
     Description:
-        根据经纬度坐标点获取对应位置的行政区划与POI信息
+        根据纬经度坐标, 获取对应位置的地址描述, 所在行政区划, 道路以及相关POI等信息
         
     Args:
         latitude: 纬度 (gcj02ll)
@@ -131,7 +138,9 @@ async def map_reverse_geocode(
             "output": "json",
             "coordtype": "gcj02ll",
             "location": f"{latitude},{longitude}",
+            "extensions_road": "true",
             "extensions_poi": "1",
+            "entire_poi": "1",# 返回周边全量poi信息
             "from": "py_mcp"
         }
  
@@ -155,6 +164,7 @@ async def map_reverse_geocode(
 @mcp.tool()
 async def map_search_places(
     query: str,
+    tag: str,
     region: str,
     location: str,
     radius: int,
@@ -165,13 +175,15 @@ async def map_search_places(
         地点检索服务
     
     Description:
+        支持检索城市内的地点信息(最小到city级别), 也可支持圆形区域内的周边地点信息检索
         城市内检索: 检索某一城市内（目前最细到城市级别）的地点信息。
         周边检索: 设置圆心和半径，检索圆形区域内的地点信息（常用于周边检索场景）。
     
     Args:
-        query: 检索关键字
-        region: 检索的行政区划
-        location: 圆形区域检索中心点
+        query: 检索关键字, 可直接使用名称或类型, 如'query=天安门', 且可以至多10个关键字, 用英文逗号隔开
+        tag: 检索分类, 以中文字符输入: 如'tag=美食', 多个分类用英文逗号隔开, 如'tag=美食,购物'
+        region: 检索的行政区划, 可为行政区划名或citycode, 格式为'region=cityname'或'region=citycode' 
+        location: 圆形区域检索的中心点纬经度坐标, 格式为location=lat,lng
         radius: 圆形区域检索半径，单位：米
         
     """
@@ -189,12 +201,14 @@ async def map_search_places(
             "ak": f"{api_key}",
             "output": "json",
             "query": f"{query}",
-            "region": f"{region}",
+            "tag": f"{tag}",
             "from": "py_mcp"
         }
         if location:
             params["location"] = f"{location}"
             params["radius"] = f"{radius}"
+        else:
+            params["region"] = f"{region}"
  
         async with httpx.AsyncClient() as client:
             response = await client.get(url, params=params)
@@ -223,7 +237,7 @@ async def map_place_details(
         
     Description:
         地点详情检索: 地点详情检索针对指定POI，检索其相关的详情信息。
-        开发者可以通地点检索服务获取POI uid。使用“地点详情检索”功能，传入uid，即可检索POI详情信息，如评分、营业时间等（不同类型POI对应不同类别详情数据）。
+        通地点检索服务获取POI uid。使用“地点详情检索”功能，传入uid，即可检索POI详情信息，如评分、营业时间等（不同类型POI对应不同类别详情数据）。
         
     Args:
         uid: poi的唯一标识
@@ -281,8 +295,8 @@ async def map_distance_matrix(
         驾车批量算路一次最多计算100条路线，起终点个数之积不能超过100
         
     Args:
-        origins: 多个起点坐标纬度,经度，按|分隔。示例：40.056878,116.30815|40.063597,116.364973【骑行】【步行】支持传入起点uid提升绑路准确性，格式为：纬度,经度;POI的uid|纬度,经度;POI的uid。示例：40.056878,116.30815;xxxxx|40.063597,116.364973;xxxxx
-        destinations: 多个终点坐标纬度,经度，按|分隔。示例：40.056878,116.30815|40.063597,116.364973【【骑行】【步行】支持传入终点uid提升绑路准确性，格式为：纬度,经度;POI的uid|纬度,经度;POI的uid。示例：40.056878,116.30815;xxxxx|40.063597,116.364973;xxxxx
+        origins: 多个起点纬经度坐标，纬度在前，经度在后，多个起点用|分隔。示例：40.056878,116.30815|40.063597,116.364973【骑行】【步行】支持传入起点uid提升绑路准确性，格式为：纬度,经度;POI的uid|纬度,经度;POI的uid。示例：40.056878,116.30815;xxxxx|40.063597,116.364973;xxxxx
+        destinations: 多个终点纬经度坐标，纬度在前，经度在后，多个终点用|分隔。示例：40.056878,116.30815|40.063597,116.364973【【骑行】【步行】支持传入终点uid提升绑路准确性，格式为：纬度,经度;POI的uid|纬度,经度;POI的uid。示例：40.056878,116.30815;xxxxx|40.063597,116.364973;xxxxx
         mode: 批量算路类型(driving, riding, walking)
         
     """
@@ -339,8 +353,8 @@ async def map_directions(
         
     Args:
         model: 路线规划类型(driving, riding, walking, transit)
-        origin: 起点坐标，当用户只有起点名称时，需要先通过地理编码服务或地点地点检索服务确定起点的坐标
-        destination: 终点坐标，当用户只有起点名称时，需要先通过地理编码服务或地点检索服务确定起点的坐标
+        origin: 起点纬经度坐标，纬度在前，经度在后，当用户只有起点名称时，需要先通过地理编码服务或地点地点检索服务确定起点的坐标
+        destination: 终点纬经度坐标，纬度在前，经度在后，当用户只有起点名称时，需要先通过地理编码服务或地点检索服务确定起点的坐标
  
     """
     try:
@@ -402,7 +416,7 @@ async def map_weather(
         
     Args:
         location: 经纬度，经度在前纬度在后，逗号分隔 (需要高级权限, 例如: 116.30815,40.056878)
-        district_id: 行政区划 (例如: 1101010)
+        district_id: 行政区划代码, 需保证为6位无符号整数 (例如: 1101010)
     """
     try:
         # 获取API密钥
@@ -517,9 +531,9 @@ async def map_road_traffic(
         model:      路况查询类型(road, bound, polygon, around)
         road_name:  道路名称和道路方向, model=road时必传 (如:朝阳路南向北)
         city:       城市名称或城市adcode, model=road时必传 (如:北京市)
-        bounds:     区域左下角和右上角的经纬度坐标, model=bound时必传 (如:39.912078,116.464303;39.918276,116.475442)
-        vertexes:   多边形区域的顶点经纬度, model=polygon时必传 (如:39.910528,116.472926;39.918276,116.475442;39.916671,116.459056;39.912078,116.464303)
-        center:     圆形区域的中心点经纬度坐标, model=around时必传 (如:39.912078,116.464303)
+        bounds:     区域左下角和右上角的纬经度坐标,纬度在前,经度在后, model=bound时必传 (如:39.912078,116.464303;39.918276,116.475442)
+        vertexes:   多边形区域的顶点纬经度坐标,纬度在前,经度在后, model=polygon时必传 (如:39.910528,116.472926;39.918276,116.475442;39.916671,116.459056;39.912078,116.464303)
+        center:     圆形区域的中心点纬经度坐标,纬度在前,经度在后, model=around时必传 (如:39.912078,116.464303)
         radius:     圆形区域的半径(米), 取值[1,1000], model=around时必传 (如:200)
  
     """
